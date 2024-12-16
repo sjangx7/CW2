@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 // Checkout code from GitHub
-                git branch: 'main', url: 'https://github.com/yourusername/your-repository.git'
+                git credentialsId: 'github-credentials', branch: 'main', url: 'https://github.com/sjangx7/CW2.git'
             }
         }
 
