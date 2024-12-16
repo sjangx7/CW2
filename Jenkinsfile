@@ -15,6 +15,9 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
                 script {
+                    // Check if Docker is running
+                    sh 'docker --version'
+                    // Build the image
                     sh "docker build -t ${DOCKER_IMAGE_NAME} ."
                 }
             }
