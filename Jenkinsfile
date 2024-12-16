@@ -1,73 +1,34 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_IMAGE = 'sjangx7/cw2-server'
-        DOCKER_TAG = 'latest'
-        K8S_DEPLOYMENT_NAME = 'cw2-server-deployment'
-        K8S_NAMESPACE = 'default'
+        DOCKERHUB_CREDENTIALS = credentials(sjangx7) 
+        DOCKER_IMAGE_NAME = sjangx7/cw2-server:1.0 
     }
-
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                // Checkout code from GitHub
-                git credentialsId: 'github-credentials', branch: 'main', url: 'https://github.com/sjangx7/CW2.git'
+                echo 'Cloning repository...'
+                git url: https://github.com/sjangx7/CW2.git, branch: 'main'
             }
         }
-
         stage('Build Docker Image') {
             steps {
+                echo 'Building Docker image...'
                 script {
-                    // Build the Docker image using Dockerfile
-                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                    sh 'docker build -t $DOCKER_IMAGE_NAME .'
                 }
             }
         }
-
-        stage('Test Docker Image') {
+        stage('Test Container Launch') {
             steps {
+                echo 'Testing container launch...'
                 script {
-                    // Run the container and test if it launches successfully
-                    def image = docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                    image.inside {
-                        sh 'echo "Testing container launch"'
-                        sh 'curl http://localhost' // Example test command
-                    }
+                    // Run the container in detached mode
+                    sh 'docker run -d --name test-container $DOCKER_IMAGE_NAME'
+                    // Execute a simple command inside the container to confirm it's running
+                    sh 'docker exec test-container echo "Container is running"'
+                    // Stop and remove the test container
+                    sh 'docker stop test-container'
+                    sh 'docker rm test-container'
                 }
             }
-        }
-
-        stage('Push Docker Image to DockerHub') {
-            steps {
-                script {
-                    // Push the Docker image to DockerHub
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    // Set kubeconfig if not already set
-                    withKubeConfig(credentialsId: 'kubeconfig') {
-                        // Deploy or update the deployment in Kubernetes
-                        sh """
-                        kubectl set image deployment/${K8S_DEPLOYMENT_NAME} ${K8S_DEPLOYMENT_NAME}=${DOCKER_IMAGE}:${DOCKER_TAG} --namespace=${K8S_NAMESPACE}
-                        kubectl rollout status deployment/${K8S_DEPLOYMENT_NAME} --namespace=${K8S_NAMESPACE}
-                        """
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()  // Clean workspace after the pipeline runs
-        }
-    }
-}
