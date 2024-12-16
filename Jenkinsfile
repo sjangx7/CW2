@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'your-dockerhub-username/cw2-server'
+        DOCKER_IMAGE = 'sjangx7/cw2-server'
         DOCKER_TAG = 'latest'
         K8S_DEPLOYMENT_NAME = 'cw2-server-deployment'
         K8S_NAMESPACE = 'default'
